@@ -15,8 +15,23 @@ def call(series):
     with urllib.request.urlopen(f"{URL}?{q}", timeout=20) as r:
         return r.read()
 
-def rows(xml):
-    root = ET.fromstring(xml)
+def rows(raw):
+    t = raw.decode("utf-8", "replace").lstrip()
+    if t.startswith("{"):  # JSON 응답도 처리
+        j = json.loads(t)
+        body = j.get("response", j)
+        code = str(body.get("header", {}).get("resultCode", "00"))
+        if code not in ("", "00"):
+            raise RuntimeError(f"API 오류 {code}: {body.get('header', {}).get('resultMsg')}")
+        items = (body.get("body") or {}).get("items") or []
+        if isinstance(items, dict):
+            items = items.get("item", [])
+        if isinstance(items, dict):
+            items = [items]
+        for it in items:
+            yield {k: str(v).strip() for k, v in it.items()}
+        return
+    root = ET.fromstring(raw)
     code = (root.findtext(".//resultCode") or "").strip()
     if code not in ("", "00"):
         raise RuntimeError(f"API 오류 {code}: {root.findtext('.//resultMsg')}")
