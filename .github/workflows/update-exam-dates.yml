@@ -1,7 +1,6 @@
 name: 시험일 자동 갱신
 on:
-  schedule:
-    - cron: "17 0 * * 1"   # 매주 월요일 09:17 (한국시간)
+  # 공단 서버가 해외(GitHub) 접속을 막아 자동 실행은 맥미니에서 합니다 (시험일_업데이트 폴더)
   workflow_dispatch: {}
 permissions:
   contents: write
