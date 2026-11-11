@@ -11,8 +11,8 @@ URL = "https://apis.data.go.kr/B490007/qualExamSchd/getQualExamSchdList"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "exam-dates.json")
 NAME = re.compile(r"사회복지사\s*1급")
 
-def call(year):
-    q = urllib.parse.urlencode({"serviceKey": KEY, "numOfRows": 300, "pageNo": 1,
+def call(year, page=1):
+    q = urllib.parse.urlencode({"serviceKey": KEY, "numOfRows": 50, "pageNo": page,
                                 "dataFormat": "json", "implYy": year, "qualgbCd": "S"})
     req = urllib.request.Request(f"{URL}?{q}", headers={"User-Agent": "sw1cbt"})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -51,7 +51,9 @@ def lookup():
     y = date.today().year
     for year in (y - 1, y, y + 1):
         try:
-            for r in rows(call(year)):
+          for page in range(1, 21):  # 한 페이지 최대 50개
+            got = list(rows(call(year, page)))
+            for r in got:
                 desc = r.get("description", "")
                 seen.append(f"{year}: {desc}")
                 if not NAME.search(desc):
@@ -62,6 +64,8 @@ def lookup():
                     found[int(m.group(1))] = {"n": int(m.group(1)), "d": d,
                         "reg": [ymd(r.get("docRegStartDt")), ymd(r.get("docRegEndDt"))],
                         "pass": ymd(r.get("docPassDt"))}
+            if len(got) < 50:
+                break
         except Exception as e:
             print(f"{year}년 조회 실패: {e}", file=sys.stderr)
     return found, seen
